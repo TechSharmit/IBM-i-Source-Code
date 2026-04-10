@@ -1,0 +1,11 @@
+     C           *ENTRY    PLIST
+     C                     PARM           DATEIN  80
+     C           DATEIN    DIV  100       DATEIN
+     C                     MVR            DAY     20
+     C           DATEIN    DIV  100       DATEIN
+     C                     MVR            MONTH   20
+     C                     Z-ADDDATEIN    YEAR    40
+     C           YEAR      DSPLY
+     C           MONTH     DSPLY
+     C           DAY       DSPLY
+     C                     SETON                         LR
