@@ -1,0 +1,39 @@
+**FREE
+
+//------------------------------------------------
+// MAIN PROCEDURE - CALLS THE SUBPROCEDURE
+//------------------------------------------------
+DCL-S SALARY  PACKED(9:2);
+DCL-S TAXAMT  PACKED(9:2);
+DCL-S NETPAY  PACKED(9:2);
+
+SALARY = 50000.00;
+
+CALCTAX(SALARY : TAXAMT : NETPAY);
+
+DSPLY TAXAMT;
+DSPLY NETPAY;
+
+*INLR = *ON;
+RETURN;
+
+//------------------------------------------------
+// SUBPROCEDURE - CALCTAX
+// INPUT  : SALARY
+// OUTPUT : TAXAMT, NETPAY
+//------------------------------------------------
+DCL-PROC CALCTAX;
+  DCL-PI *N;
+    PSALARY  PACKED(9:2) VALUE;
+    PTAXAMT  PACKED(9:2);
+    PNETPAY  PACKED(9:2);
+  END-PI;
+
+  DCL-S TAXRATE PACKED(5:2) INZ(0.20);
+
+  PTAXAMT = PSALARY * TAXRATE;
+  PNETPAY = PSALARY - PTAXAMT;
+
+  RETURN;
+
+END-PROC CALCTAX;
