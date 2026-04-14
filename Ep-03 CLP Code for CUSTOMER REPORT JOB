@@ -1,0 +1,113 @@
+/*---------------------------------------------------*/
+/* PROGRAM  : CUSTJOB                                */
+/* PURPOSE  : CUSTOMER REPORT JOB                    */
+/* AUTHOR   : SHARMIT                                */
+/*---------------------------------------------------*/
+PGM
+
+DCL VAR(&CUSNO)   TYPE(*CHAR) LEN(5)
+DCL VAR(&CUSNAM)  TYPE(*CHAR) LEN(20)
+DCL VAR(&MSG)     TYPE(*CHAR) LEN(50)
+
+CHGVAR VAR(&CUSNO)  VALUE('00001')
+CHGVAR VAR(&CUSNAM) VALUE('JOHN SMITH')
+CHGVAR VAR(&MSG)    VALUE('PROCESSING CUSTOMER')
+Q
+SNDPGMMSG MSG(&MSG *TCAT ' : ' *TCAT &CUSNO *TCAT ' ' +
+              *TCAT &CUSNAM) +
+          MSGTYPE(*INFO)
+
+CHGVAR VAR(&CUSNO)  VALUE('00002')
+CHGVAR VAR(&CUSNAM) VALUE('JANE DOE')
+CHGVAR VAR(&MSG)    VALUE('PROCESSING CUSTOMER')
+
+SNDPGMMSG MSG(&MSG *TCAT ' : ' *TCAT &CUSNO *TCAT ' ' +
+              *TCAT &CUSNAM) +
+          MSGTYPE(*INFO)
+
+CHGVAR VAR(&CUSNO)  VALUE('00003')
+CHGVAR VAR(&CUSNAM) VALUE('BOB MARTIN')
+CHGVAR VAR(&MSG)    VALUE('PROCESSING CUSTOMER')
+
+SNDPGMMSG MSG(&MSG *TCAT ' : ' *TCAT &CUSNO *TCAT ' ' +
+              *TCAT &CUSNAM) +
+          MSGTYPE(*INFO)
+
+SNDPGMMSG MSG('ALL CUSTOMERS PROCESSED SUCCESSFULLY') +
+          MSGTYPE(*INFO)
+
+ENDPGM
+
+
+
+You are an expert IBM i CL programmer with 20+ years of experience.
+You strictly follow IBM i CL and CLLE language standards.
+
+I will give you a CLLE (Control Language ILE) program written for IBM i.
+You must analyze it and return answers in the EXACT format I specify below.
+Do NOT guess. Do NOT assume. Read the code EXACTLY as written.
+
+====================================================
+ANALYSIS RULES — FOLLOW STRICTLY
+====================================================
+
+RULE 1 - VARIABLES
+  - Only list variables declared with DCL command
+  - Capture exact name, TYPE and LEN from DCL statement
+  - Show what value each variable holds at END of program
+  - Valid types are *CHAR, *DEC, *LGL, *INT
+
+RULE 2 - STEP BY STEP EXECUTION
+  - List EVERY command in the order it executes
+  - Use this exact format for each step:
+    STEP X | COMMAND | WHAT IT DOES IN PLAIN ENGLISH
+  - Do not skip any command
+  - Do not combine steps
+
+RULE 3 - MESSAGES
+  - List EVERY SNDPGMMSG in order
+  - Show the EXACT message text that will appear
+  - Resolve all variable values and concatenations
+  - Show final assembled message string
+
+RULE 4 - ERROR HANDLING
+  - Check if MONMSG is present
+  - If YES list every MONMSG with its MSGID and action
+  - If NO clearly state:
+    "NO ERROR HANDLING - MONMSG NOT FOUND"
+
+RULE 5 - PROGRAM FLOW
+  - Does program use IF/ELSE?    YES or NO
+  - Does program use GOTO?       YES or NO
+  - Does program use DO/ENDDO?   YES or NO
+  - Does program call other PGMs? YES or NO
+    If YES list every CALL command with PGM name
+
+RULE 6 - OUTPUT FORMAT
+  Return your answer in this EXACT structure:
+
+  SECTION 1 : PROGRAM PURPOSE
+  SECTION 2 : VARIABLES TABLE
+  SECTION 3 : STEP BY STEP EXECUTION
+  SECTION 4 : MESSAGES SENT (EXACT TEXT)
+  SECTION 5 : ERROR HANDLING
+  SECTION 6 : PROGRAM FLOW SUMMARY
+  SECTION 7 : REAL WORLD USE CASE ON IBM i
+
+====================================================
+IMPORTANT — DO NOT VIOLATE THESE RULES
+====================================================
+  - Use IBM i CL terminology only
+  - *TCAT means trim and concatenate — resolve it fully
+  - *CAT means concatenate with spaces — resolve it fully
+  - CHGVAR assigns value — track every variable change
+  - SNDPGMMSG sends message — show exact final text
+  - Do not add information that is not in the code
+  - Do not miss any command
+  - Count every step — do not skip
+
+====================================================
+HERE IS THE CLLE PROGRAM TO ANALYZE:
+====================================================
+
+[PASTE YOUR CLLE PROGRAM HERE]
