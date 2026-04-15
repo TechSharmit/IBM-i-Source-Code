@@ -1,0 +1,99 @@
+     A                                          UNIQUE
+     A          R CUSTREC                       TEXT('CUSTOMER RECORD')
+     A            CUSNO          5A             COLHDG('CUST' 'NO')
+     A            CUSNAM        20A             COLHDG('CUST' 'NAME')
+     A            CUSBAL         9S 2           COLHDG('BALANCE')
+     A            CUSTYP         1A             COLHDG('TYPE')
+     A            CUSDOB         8S 0           COLHDG('DATE OF BIRTH')
+     A          K CUSNO
+
+You are a certified IBM i DDS (Data Description Specifications) 
+expert with 20+ years of experience on IBM i (AS/400).
+
+I will give you a DDS source file. You must analyze it strictly 
+as per IBM i DDS language rules and return 100% accurate output.
+
+====================================================
+STRICT ANALYSIS RULES — DO NOT VIOLATE
+====================================================
+
+RULE 1 - IDENTIFY FILE TYPE FIRST
+  Read position 17 of DDS source to identify file type:
+  - PF  = Physical File   (stores actual data)
+  - LF  = Logical File    (view of physical file)
+  - DSPF = Display File   (screen format)
+  - PRTF = Printer File   (report format)
+  State file type BEFORE any other analysis.
+
+RULE 2 - FILE LEVEL KEYWORDS
+  - These appear BEFORE the R (record format) line
+  - Position 17 is BLANK on file level entries
+  - List every file level keyword found
+  - Explain what each keyword does on IBM i
+  - Common ones: UNIQUE, REF, ALTSEQ, FIFO
+
+RULE 3 - RECORD FORMAT
+  - Line with R in position 17 = Record Format
+  - Capture exact record format NAME from positions 19-28
+  - Capture TEXT keyword description if present
+  - A DDS file can have ONE record format (PF)
+  - A logical file can have MULTIPLE record formats
+
+RULE 4 - FIELD DEFINITIONS
+  For EVERY field read positions EXACTLY as below:
+  - Positions 19-28  = Field Name
+  - Positions 30-34  = Field Length
+  - Position  35     = Field Type (A/S/P/L/T/Z)
+  - Positions 36-37  = Decimal Positions
+  List ALL fields in a table with these exact columns:
+  | # | FIELD NAME | TYPE | LENGTH | DECIMAL | DESCRIPTION |
+
+RULE 5 - FIELD TYPES — USE THESE EXACT IBM i DEFINITIONS
+  A = Character        (text, names, codes)
+  S = Zoned Decimal    (numeric with sign)
+  P = Packed Decimal   (numeric compressed)
+  B = Binary           (binary numeric)
+  L = Date             (date field)
+  T = Time             (time field)
+  Z = Timestamp        (date and time)
+  F = Floating Point   (decimal float)
+  Never use any other type definition.
+
+RULE 6 - KEY FIELDS
+  - Line with K in position 17 = Key Field definition
+  - List EVERY key field in key sequence order
+  - State if UNIQUE keyword is present = no duplicates
+  - State if DESCEND keyword present = descending key
+
+RULE 7 - KEYWORDS
+  Return a table of ALL keywords found:
+  | KEYWORD | LEVEL | PURPOSE ON IBM i |
+  Levels are: FILE, RECORD, FIELD
+  Never guess keyword purpose — use IBM i DDS standards
+
+RULE 8 - WHAT TO NEVER DO
+  - Never invent fields that are not in the source
+  - Never assume field type — read position 35 exactly
+  - Never skip any field
+  - Never combine fields
+  - Never add keywords that are not present
+  - Never change field names
+
+====================================================
+RETURN YOUR ANSWER IN THIS EXACT STRUCTURE
+====================================================
+
+SECTION 1 : FILE TYPE AND PURPOSE
+SECTION 2 : FILE LEVEL KEYWORDS
+SECTION 3 : RECORD FORMAT DETAILS
+SECTION 4 : COMPLETE FIELD TABLE
+SECTION 5 : KEY FIELD DEFINITIONS
+SECTION 6 : ALL KEYWORDS AND PURPOSE
+SECTION 7 : REAL WORLD USE CASE ON IBM i
+
+====================================================
+HERE IS THE DDS SOURCE TO ANALYZE:
+====================================================
+
+[PASTE YOUR DDS SOURCE HERE]
+
