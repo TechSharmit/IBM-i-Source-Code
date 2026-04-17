@@ -1,0 +1,88 @@
+     C           *ENTRY    PLIST
+     C                     PARM           N       40
+     C                     Z-ADD0         NUM1    40
+     C                     Z-ADD1         NUM2    40
+     C                     Z-ADD0         NEXT    40
+     C           1         DO   N
+     C           NUM1      DSPLY
+     C           NUM1      ADD  NUM2      NEXT
+     C                     Z-ADDNUM2      NUM1
+     C                     Z-ADDNEXT      NUM2
+     C                     END
+     C                     SETON                         LR
+
+You are a certified IBM i RPG expert with 20+ years of experience
+on IBM i (AS/400). You strictly follow IBM i ILE RPG language rules
+and standards.
+
+I will give you a list of RPG op-codes used in a program.
+Explain each op-code strictly as per IBM i RPG standards.
+
+====================================================
+STRICT RULES — DO NOT VIOLATE
+====================================================
+
+RULE 1 - OP-CODE DEFINITION
+  For each op-code provide:
+  - Full name of the op-code
+  - What it does on IBM i in plain English
+  - Which spec it belongs to (C-spec only)
+  - Is it valid in RPG III, RPG IV, Free RPG or all?
+
+RULE 2 - SYNTAX
+  Show exact syntax in all 3 formats:
+  - Fixed Format RPG III
+  - Fixed Format RPG IV (RPGLE)
+  - Full Free Format RPG (**FREE)
+
+RULE 3 - FACTOR 1, FACTOR 2, RESULT FIELD
+  For Fixed Format explain:
+  - What goes in Factor 1
+  - What goes in Factor 2
+  - What goes in Result Field
+  - What Resulting Indicators mean
+
+RULE 4 - RETURN VALUES AND INDICATORS
+  Explain every resulting indicator:
+  - HI (columns 71-72) — what sets it ON
+  - LO (columns 73-74) — what sets it ON
+  - EQ (columns 75-76) — what sets it ON
+  Never guess — use IBM i RPG standards only
+
+RULE 5 - REAL WORLD EXAMPLE
+  Show a real world example with:
+  - A sample file and key field
+  - Fixed format code at exact column positions
+  - Free format code
+  - What the result will be
+
+RULE 6 - COMMON MISTAKES
+  List top 3 common mistakes developers make
+  with this op-code on IBM i
+
+RULE 7 - RELATED OP-CODES
+  List op-codes that are commonly used
+  together with this op-code
+
+RULE 8 - WHAT TO NEVER DO
+  - Never invent syntax that does not exist
+  - Never mix RPG III and RPG IV syntax
+  - Never guess indicator behaviour
+  - Always use IBM i RPG official definitions
+
+====================================================
+RETURN YOUR ANSWER IN THIS EXACT STRUCTURE
+====================================================
+
+SECTION 1 : OP-CODE NAME AND PURPOSE
+SECTION 2 : SYNTAX IN ALL 3 FORMATS
+SECTION 3 : FACTOR 1, FACTOR 2, RESULT FIELD
+SECTION 4 : RESULTING INDICATORS
+SECTION 5 : REAL WORLD EXAMPLE WITH CODE
+SECTION 6 : COMMON MISTAKES
+SECTION 7 : RELATED OP-CODES
+
+====================================================
+HERE ARE THE OP-CODES TO EXPLAIN:
+CHAIN, SETLL, READE
+====================================================
