@@ -1,0 +1,413 @@
+**FREE
+// ============================================================
+// Program  : CUSTMAINT
+// Purpose  : Customer Master Maintenance - Full CRUD Demo
+// Type     : Full Free-Format RPGLE
+// DB Access: Native RPG I/O (F-specs)
+// Operations: Read (Chain), Write, Update, Delete
+// ============================================================
+
+// ------------------------------------------------------------
+// FILE SPECIFICATIONS
+// ------------------------------------------------------------
+Dcl-F CUSTMST  Usage(*Update:*Delete:*Output)
+               Keyed
+               Extdesc('YOURLIB/CUSTMST')
+               Extfile(*Extdesc)
+               Usropn;
+
+Dcl-F CUSTMSTL Usage(*Input)
+               Keyed
+               Extdesc('YOURLIB/CUSTMST')
+               Extfile(*Extdesc)
+               Prefix(L_)
+               Usropn;
+
+// ------------------------------------------------------------
+// CUSTOMER MASTER FILE FIELD DEFINITIONS
+// (Match your physical file CUSTMST layout)
+// Field Name   Type   Length  Description
+// CUSNO        Packed  7,0    Customer Number (Key)
+// CUSNAM       Char    40     Customer Name
+// CUSAD1       Char    40     Address Line 1
+// CUSAD2       Char    40     Address Line 2
+// CUSCTY       Char    30     City
+// CUSSTA       Char    2      State
+// CUSZIP       Char    10     ZIP Code
+// CUSPH1       Char    15     Phone Number
+// CUSBAL       Packed  11,2   Account Balance
+// CUSDTC       Date    L      Date Created
+// CUSDTU       Date    L      Date Last Updated
+// CUSSTS       Char    1      Status (A=Active, I=Inactive)
+// ------------------------------------------------------------
+
+// ------------------------------------------------------------
+// DATA STRUCTURES
+// ------------------------------------------------------------
+Dcl-Ds CustRec  Qualified;
+  CusNo         Packed(7:0);
+  CusNam        Char(40);
+  CusAd1        Char(40);
+  CusAd2        Char(40);
+  CusCty        Char(30);
+  CusSta        Char(2);
+  CusZip        Char(10);
+  CusPh1        Char(15);
+  CusBal        Packed(11:2);
+  CusDtC        Date(*ISO);
+  CusDtU        Date(*ISO);
+  CusSts        Char(1);
+End-Ds;
+
+// ------------------------------------------------------------
+// STANDALONE VARIABLES
+// ------------------------------------------------------------
+Dcl-S wCusNo    Packed(7:0);
+Dcl-S wAction   Char(1);
+Dcl-S wMsg      Char(80);
+Dcl-S wFound    Ind;
+Dcl-S wEOF      Ind;
+
+// ------------------------------------------------------------
+// CONSTANTS
+// ------------------------------------------------------------
+Dcl-C STATUS_ACTIVE    'A';
+Dcl-C STATUS_INACTIVE  'I';
+
+// ============================================================
+// MAIN PROCEDURE
+// ============================================================
+Open CUSTMST;
+Open CUSTMSTL;
+
+// --- DEMO: Write (Add) a new customer ---
+CustRec.CusNo  = 1001;
+CustRec.CusNam = 'ABC Technologies Ltd';
+CustRec.CusAd1 = '123 Industrial Estate';
+CustRec.CusAd2 = 'Phase II';
+CustRec.CusCty = 'Jaipur';
+CustRec.CusSta = 'RJ';
+CustRec.CusZip = '302001';
+CustRec.CusPh1 = '0141-4001234';
+CustRec.CusBal = 0;
+CustRec.CusDtC = %Date();
+CustRec.CusDtU = %Date();
+CustRec.CusSts = STATUS_ACTIVE;
+pWriteCustomer(CustRec : wMsg);
+pLogMessage(wMsg);
+
+// --- DEMO: Read (Chain) a customer by key ---
+wCusNo  = 1001;
+wFound  = *Off;
+pReadCustomer(wCusNo : CustRec : wFound);
+If wFound;
+  pLogMessage('READ OK - ' + %TrimR(CustRec.CusNam));
+Else;
+  pLogMessage('READ FAILED - Customer ' + %Char(wCusNo) + ' not found');
+EndIf;
+
+// --- DEMO: Update an existing customer ---
+If wFound;
+  CustRec.CusPh1 = '0141-5009999';
+  CustRec.CusBal = 25000.50;
+  CustRec.CusDtU = %Date();
+  pUpdateCustomer(CustRec : wMsg);
+  pLogMessage(wMsg);
+EndIf;
+
+// --- DEMO: Read All (Sequential) ---
+pReadAllCustomers();
+
+// --- DEMO: Delete a customer ---
+wCusNo = 1001;
+pDeleteCustomer(wCusNo : wMsg);
+pLogMessage(wMsg);
+
+Close CUSTMST;
+Close CUSTMSTL;
+*InLR = *On;
+Return;
+
+// ============================================================
+// PROCEDURE: pWriteCustomer
+// PURPOSE  : Add a new customer record
+// ============================================================
+Dcl-Proc pWriteCustomer;
+  Dcl-Pi *N;
+    piRec   LikeDs(CustRec);
+    poMsg   Char(80);
+  End-Pi;
+
+  // Check if customer already exists
+  Chain piRec.CusNo CUSTMST;
+  If %Found(CUSTMST);
+    poMsg = 'WRITE FAILED - Customer ' + %Char(piRec.CusNo) + ' already exists';
+    Return;
+  EndIf;
+
+  // Map DS to file fields and write
+  CUSNO  = piRec.CusNo;
+  CUSNAM = piRec.CusNam;
+  CUSAD1 = piRec.CusAd1;
+  CUSAD2 = piRec.CusAd2;
+  CUSCTY = piRec.CusCty;
+  CUSSTA = piRec.CusSta;
+  CUSZIP = piRec.CusZip;
+  CUSPH1 = piRec.CusPh1;
+  CUSBAL = piRec.CusBal;
+  CUSDTC = piRec.CusDtC;
+  CUSDTU = piRec.CusDtU;
+  CUSSTS = piRec.CusSts;
+
+  Write CUSTREC;                     // Write record to CUSTMST
+
+  If %Error();
+    poMsg = 'WRITE ERROR - I/O error writing customer ' + %Char(piRec.CusNo);
+  Else;
+    poMsg = 'WRITE OK   - Customer ' + %Char(piRec.CusNo) +
+            ' ' + %TrimR(piRec.CusNam) + ' added successfully';
+  EndIf;
+
+End-Proc pWriteCustomer;
+
+// ============================================================
+// PROCEDURE: pReadCustomer
+// PURPOSE  : Read a single customer by Customer Number (Chain)
+// ============================================================
+Dcl-Proc pReadCustomer;
+  Dcl-Pi *N;
+    piCusNo  Packed(7:0);
+    poRec    LikeDs(CustRec);
+    poFound  Ind;
+  End-Pi;
+
+  Chain piCusNo CUSTMST;
+
+  If %Found(CUSTMST) And Not %Error();
+    poFound        = *On;
+    poRec.CusNo    = CUSNO;
+    poRec.CusNam   = CUSNAM;
+    poRec.CusAd1   = CUSAD1;
+    poRec.CusAd2   = CUSAD2;
+    poRec.CusCty   = CUSCTY;
+    poRec.CusSta   = CUSSTA;
+    poRec.CusZip   = CUSZIP;
+    poRec.CusPh1   = CUSPH1;
+    poRec.CusBal   = CUSBAL;
+    poRec.CusDtC   = CUSDTC;
+    poRec.CusDtU   = CUSDTU;
+    poRec.CusSts   = CUSSTS;
+  Else;
+    poFound = *Off;
+    Clear poRec;
+  EndIf;
+
+End-Proc pReadCustomer;
+
+// ============================================================
+// PROCEDURE: pUpdateCustomer
+// PURPOSE  : Update an existing customer record
+// ============================================================
+Dcl-Proc pUpdateCustomer;
+  Dcl-Pi *N;
+    piRec   LikeDs(CustRec);
+    poMsg   Char(80);
+  End-Pi;
+
+  // Chain locks the record for update
+  Chain piRec.CusNo CUSTMST;
+
+  If Not %Found(CUSTMST);
+    poMsg = 'UPDATE FAILED - Customer ' + %Char(piRec.CusNo) + ' not found';
+    Return;
+  EndIf;
+
+  If %Error();
+    poMsg = 'UPDATE ERROR - I/O error reading customer ' + %Char(piRec.CusNo);
+    Return;
+  EndIf;
+
+  // Update only changed fields; key field CUSNO stays unchanged
+  CUSNAM = piRec.CusNam;
+  CUSAD1 = piRec.CusAd1;
+  CUSAD2 = piRec.CusAd2;
+  CUSCTY = piRec.CusCty;
+  CUSSTA = piRec.CusSta;
+  CUSZIP = piRec.CusZip;
+  CUSPH1 = piRec.CusPh1;
+  CUSBAL = piRec.CusBal;
+  CUSDTU = piRec.CusDtU;     // Update the last-updated date
+  CUSSTS = piRec.CusSts;
+
+  Update CUSTREC;             // Update the locked record
+
+  If %Error();
+    poMsg = 'UPDATE ERROR - I/O error updating customer ' + %Char(piRec.CusNo);
+  Else;
+    poMsg = 'UPDATE OK  - Customer ' + %Char(piRec.CusNo) +
+            ' ' + %TrimR(piRec.CusNam) + ' updated successfully';
+  EndIf;
+
+End-Proc pUpdateCustomer;
+
+// ============================================================
+// PROCEDURE: pDeleteCustomer
+// PURPOSE  : Delete a customer record by Customer Number
+// ============================================================
+Dcl-Proc pDeleteCustomer;
+  Dcl-Pi *N;
+    piCusNo  Packed(7:0);
+    poMsg    Char(80);
+  End-Pi;
+
+  // Chain locks the record before delete
+  Chain piCusNo CUSTMST;
+
+  If Not %Found(CUSTMST);
+    poMsg = 'DELETE FAILED - Customer ' + %Char(piCusNo) + ' not found';
+    Return;
+  EndIf;
+
+  If %Error();
+    poMsg = 'DELETE ERROR - I/O error reading customer ' + %Char(piCusNo);
+    Return;
+  EndIf;
+
+  Delete CUSTREC;             // Delete the locked record
+
+  If %Error();
+    poMsg = 'DELETE ERROR - I/O error deleting customer ' + %Char(piCusNo);
+  Else;
+    poMsg = 'DELETE OK  - Customer ' + %Char(piCusNo) + ' deleted successfully';
+  EndIf;
+
+End-Proc pDeleteCustomer;
+
+// ============================================================
+// PROCEDURE: pReadAllCustomers
+// PURPOSE  : Read all customer records sequentially
+// ============================================================
+Dcl-Proc pReadAllCustomers;
+  Dcl-Pi *N;
+  End-Pi;
+
+  Dcl-S lEOF    Ind;
+  Dcl-S lCount  Packed(5:0);
+
+  lEOF   = *Off;
+  lCount = 0;
+
+  // Set Lower Limit to start of file
+  SetLL *Start CUSTMSTL;
+
+  DoW Not lEOF;
+
+    Read CUSTREC CUSTMSTL lEOF;   // Read next record; lEOF set at end
+
+    If Not lEOF;
+      lCount += 1;
+      pLogMessage('ROW ' + %Char(lCount) +
+                  ' | CusNo: '  + %Char(L_CUSNO)        +
+                  ' | Name: '   + %TrimR(L_CUSNAM)       +
+                  ' | City: '   + %TrimR(L_CUSCTY)       +
+                  ' | Bal: '    + %Char(L_CUSBAL)         +
+                  ' | Status: ' + L_CUSSTS);
+    EndIf;
+
+  EndDo;
+
+  pLogMessage('READ ALL - Total records read: ' + %Char(lCount));
+
+End-Proc pReadAllCustomers;
+
+// ============================================================
+// PROCEDURE: pLogMessage
+// PURPOSE  : Write a message to the job log (DSPLY / SNDPGMMSG)
+// ============================================================
+Dcl-Proc pLogMessage;
+  Dcl-Pi *N;
+    piMsg   Char(80);
+  End-Pi;
+
+  Dcl-S lDisplay  Char(80);
+
+  lDisplay = %TrimR(piMsg);
+  Dsply lDisplay;               // Display on console / job log
+
+End-Proc pLogMessage;
+
+
+You are a certified IBM i RPG expert with 20+ years of experience.
+
+I am going to paste an RPGLE program below.
+Analyze it and identify ALL database file interactions.
+
+Return your answer in this exact structure:
+
+  1. FILES USED
+     List every file declared in the program.
+     For each file tell me:
+     - File name
+     - Is it READ only, WRITE only or READ/WRITE?
+     - Is it a database file or printer file?
+     - Is it keyed or sequential?
+
+  2. EVERY DATABASE OPERATION FOUND
+     List every single place the program
+     reads, writes, updates or deletes data.
+     For each operation tell me:
+     - Line number
+     - Operation name in plain English
+     - Which file it operates on
+     - What key or value is used
+     - What happens if record is not found
+
+  3. READ OPERATIONS
+     List every READ in the program:
+     - What triggers the read
+     - What key is used
+     - What fields are read
+     - What happens after read
+
+  4. WRITE OPERATIONS
+     List every WRITE in the program:
+     - What triggers the write
+     - Which file or format is written
+     - What data is written
+
+  5. UPDATE OPERATIONS
+     List every UPDATE in the program:
+     - What record is being updated
+     - What fields are changed
+     - What triggers the update
+
+  6. DELETE OPERATIONS
+     List every DELETE in the program:
+     - What record is deleted
+     - What triggers the delete
+     - Is there any check before delete
+
+  7. ERROR HANDLING ON FILE OPERATIONS
+     Is there any error handling on file operations?
+     - Is %ERROR used?
+     - Is INFDS used?
+     - Is MONITOR/ON-ERROR used?
+     If none found clearly state NOT FOUND.
+
+  8. COMPLETE FILE INTERACTION SUMMARY
+     Give me a simple table showing:
+     FILE NAME | OPERATION | KEY USED | PURPOSE
+
+IMPORTANT:
+  - Read code exactly as written
+  - Do not miss any file operation
+  - Do not invent operations not in code
+  - Use plain English only
+  - If operation is inside a loop say so
+  - If operation is conditional say so
+
+HERE IS THE RPGLE PROGRAM:
+
+[PASTE YOUR RPGLE PROGRAM HERE]
+
+
