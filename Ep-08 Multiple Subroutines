@@ -1,0 +1,348 @@
+**FREE
+
+// ------------------------------------------------
+// PROGRAM  : SRSDEMO
+// PURPOSE  : SALES ORDER PROCESSING
+//            DEMONSTRATES MULTIPLE SUBROUTINES
+// AUTHOR   : SHARMIT
+// ------------------------------------------------
+
+// ------------------------------------------------
+// STANDALONE FIELDS
+// ------------------------------------------------
+DCL-S WCUSNO    CHAR(5);
+DCL-S WCUSNAM   CHAR(20);
+DCL-S WCUSBAL   PACKED(9:2);
+DCL-S WORDNO    CHAR(8);
+DCL-S WORDAMT   PACKED(9:2);
+DCL-S WORDQTY   PACKED(5:0);
+DCL-S WPRICE    PACKED(9:2);
+DCL-S WDISAMT   PACKED(9:2);
+DCL-S WDISPCT   PACKED(5:2);
+DCL-S WTAXAMT   PACKED(9:2);
+DCL-S WTAXPCT   PACKED(5:2);
+DCL-S WNETAMT   PACKED(9:2);
+DCL-S WGRDTOT   PACKED(9:2);
+DCL-S WMSG      CHAR(52);
+DCL-S WIDX      INT(10);
+DCL-S WERR      CHAR(1);
+
+// ------------------------------------------------
+// CUSTOMER DATA STRUCTURE ARRAY
+// ------------------------------------------------
+DCL-DS CUSDS QUALIFIED DIM(3);
+  CUSNO    CHAR(5);
+  CUSNAM   CHAR(20);
+  CUSBAL   PACKED(9:2);
+  CUSTYP   CHAR(1);
+END-DS;
+
+// ------------------------------------------------
+// ORDER DATA STRUCTURE ARRAY
+// ------------------------------------------------
+DCL-DS ORDDS QUALIFIED DIM(3);
+  ORDNO    CHAR(8);
+  CUSNO    CHAR(5);
+  ORDQTY   PACKED(5:0);
+  ORDPRC   PACKED(9:2);
+  ORDAMT   PACKED(9:2);
+  ORDSTS   CHAR(1);
+END-DS;
+
+// ------------------------------------------------
+// LOAD CUSTOMER DATA
+// ------------------------------------------------
+CUSDS(1).CUSNO  = '00001';
+CUSDS(1).CUSNAM = 'JOHN SMITH';
+CUSDS(1).CUSBAL = 1000.00;
+CUSDS(1).CUSTYP = 'G';
+
+CUSDS(2).CUSNO  = '00002';
+CUSDS(2).CUSNAM = 'JANE DOE';
+CUSDS(2).CUSBAL = 2000.00;
+CUSDS(2).CUSTYP = 'S';
+
+CUSDS(3).CUSNO  = '00003';
+CUSDS(3).CUSNAM = 'BOB MARTIN';
+CUSDS(3).CUSBAL = 3000.00;
+CUSDS(3).CUSTYP = 'R';
+
+// ------------------------------------------------
+// LOAD ORDER DATA
+// ------------------------------------------------
+ORDDS(1).ORDNO  = 'ORD00001';
+ORDDS(1).CUSNO  = '00001';
+ORDDS(1).ORDQTY = 2;
+ORDDS(1).ORDPRC = 500.00;
+ORDDS(1).ORDAMT = 0;
+ORDDS(1).ORDSTS = 'O';
+
+ORDDS(2).ORDNO  = 'ORD00002';
+ORDDS(2).CUSNO  = '00002';
+ORDDS(2).ORDQTY = 3;
+ORDDS(2).ORDPRC = 300.00;
+ORDDS(2).ORDAMT = 0;
+ORDDS(2).ORDSTS = 'O';
+
+ORDDS(3).ORDNO  = 'ORD00003';
+ORDDS(3).CUSNO  = '00003';
+ORDDS(3).ORDQTY = 1;
+ORDDS(3).ORDPRC = 900.00;
+ORDDS(3).ORDAMT = 0;
+ORDDS(3).ORDSTS = 'O';
+
+// ------------------------------------------------
+// MAIN PROCESSING - CALLS ALL SUBROUTINES
+// ------------------------------------------------
+WGRDTOT = 0;
+WERR    = 'N';
+
+EXSR SRINITSR;
+
+FOR WIDX = 1 TO 3;
+
+  WCUSNO  = ORDDS(WIDX).CUSNO;
+  WORDNO  = ORDDS(WIDX).ORDNO;
+  WORDQTY = ORDDS(WIDX).ORDQTY;
+  WPRICE  = ORDDS(WIDX).ORDPRC;
+
+  EXSR SRCUSTSR;
+
+  IF WERR = 'N';
+    EXSR SRCALCSR;
+    EXSR SRDISCSR;
+    EXSR SRTAXSR;
+    EXSR SRNETSR;
+    EXSR SRUPDSR;
+    EXSR SRPRTSR;
+  ENDIF;
+
+ENDFOR;
+
+EXSR SRTOTSR;
+EXSR SRENDSR;
+
+*INLR = *ON;
+
+// ================================================
+// SUBROUTINE 1 - SRINITSR
+// PURPOSE : INITIALIZE ALL WORK FIELDS
+// ================================================
+BEGSR SRINITSR;
+
+  WDISAMT = 0;
+  WDISPCT = 0;
+  WTAXAMT = 0;
+  WTAXPCT = 0;
+  WNETAMT = 0;
+  WORDAMT = 0;
+  WERR    = 'N';
+
+  DSPLY '*** SALES ORDER PROCESSING START ***';
+
+ENDSR;
+
+// ================================================
+// SUBROUTINE 2 - SRCUSTSR
+// PURPOSE : VALIDATE CUSTOMER EXISTS
+// ================================================
+BEGSR SRCUSTSR;
+
+  WERR    = 'Y';
+  WCUSNAM = *BLANKS;
+  WCUSBAL = 0;
+
+  IF WCUSNO = CUSDS(1).CUSNO;
+    WCUSNAM = CUSDS(1).CUSNAM;
+    WCUSBAL = CUSDS(1).CUSBAL;
+    WDISPCT = 0.10;
+    WERR    = 'N';
+
+  ELSEIF WCUSNO = CUSDS(2).CUSNO;
+    WCUSNAM = CUSDS(2).CUSNAM;
+    WCUSBAL = CUSDS(2).CUSBAL;
+    WDISPCT = 0.15;
+    WERR    = 'N';
+
+  ELSEIF WCUSNO = CUSDS(3).CUSNO;
+    WCUSNAM = CUSDS(3).CUSNAM;
+    WCUSBAL = CUSDS(3).CUSBAL;
+    WDISPCT = 0.20;
+    WERR    = 'N';
+
+  ENDIF;
+
+  IF WERR = 'Y';
+    WMSG = 'ERROR : CUSTOMER ' + WCUSNO + ' NOT FOUND';
+    DSPLY WMSG;
+  ELSE;
+    WMSG = 'CUSTOMER VALIDATED : ' + %TRIMR(WCUSNAM);
+    DSPLY WMSG;
+  ENDIF;
+
+ENDSR;
+
+// ================================================
+// SUBROUTINE 3 - SRCALCSR
+// PURPOSE : CALCULATE ORDER AMOUNT
+// ================================================
+BEGSR SRCALCSR;
+
+  WORDAMT = WORDQTY * WPRICE;
+
+  WMSG = 'ORDER AMT : ' + %CHAR(WORDAMT);
+  DSPLY WMSG;
+
+ENDSR;
+
+// ================================================
+// SUBROUTINE 4 - SRDISCSR
+// PURPOSE : CALCULATE DISCOUNT AMOUNT
+// ================================================
+BEGSR SRDISCSR;
+
+  WDISAMT = WORDAMT * WDISPCT;
+
+  WMSG = 'DISCOUNT  : ' + %CHAR(WDISAMT);
+  DSPLY WMSG;
+
+ENDSR;
+
+// ================================================
+// SUBROUTINE 5 - SRTAXSR
+// PURPOSE : CALCULATE TAX AMOUNT
+// ================================================
+BEGSR SRTAXSR;
+
+  WTAXPCT = 0.18;
+  WTAXAMT = (WORDAMT - WDISAMT) * WTAXPCT;
+
+  WMSG = 'TAX AMT   : ' + %CHAR(WTAXAMT);
+  DSPLY WMSG;
+
+ENDSR;
+
+// ================================================
+// SUBROUTINE 6 - SRNETSR
+// PURPOSE : CALCULATE FINAL NET AMOUNT
+// ================================================
+BEGSR SRNETSR;
+
+  WNETAMT = WORDAMT - WDISAMT + WTAXAMT;
+
+  WMSG = 'NET AMT   : ' + %CHAR(WNETAMT);
+  DSPLY WMSG;
+
+ENDSR;
+
+// ================================================
+// SUBROUTINE 7 - SRUPDSR
+// PURPOSE : UPDATE ORDER STATUS AND AMOUNT
+// ================================================
+BEGSR SRUPDSR;
+
+  ORDDS(WIDX).ORDAMT = WNETAMT;
+  ORDDS(WIDX).ORDSTS = 'P';
+
+  WMSG = 'ORDER ' + WORDNO + ' STATUS UPDATED TO P';
+  DSPLY WMSG;
+
+ENDSR;
+
+// ================================================
+// SUBROUTINE 8 - SRENETSR
+// PURPOSE : PRINT ORDER DETAILS
+// ================================================
+BEGSR SRPRTSR;
+
+  DSPLY '----------------------------';
+  WMSG = 'ORDER  : ' + WORDNO;
+  DSPLY WMSG;
+  WMSG = 'CUST   : ' + %TRIMR(WCUSNAM);
+  DSPLY WMSG;
+  WMSG = 'QTY    : ' + %CHAR(WORDQTY);
+  DSPLY WMSG;
+  WMSG = 'PRICE  : ' + %CHAR(WPRICE);
+  DSPLY WMSG;
+  WMSG = 'GROSS  : ' + %CHAR(WORDAMT);
+  DSPLY WMSG;
+  WMSG = 'DISC   : ' + %CHAR(WDISAMT);
+  DSPLY WMSG;
+  WMSG = 'TAX    : ' + %CHAR(WTAXAMT);
+  DSPLY WMSG;
+  WMSG = 'NET    : ' + %CHAR(WNETAMT);
+  DSPLY WMSG;
+  DSPLY '----------------------------';
+
+  WGRDTOT = WGRDTOT + WNETAMT;
+
+ENDSR;
+
+// ================================================
+// SUBROUTINE 9 - SRTOTSR
+// PURPOSE : PRINT GRAND TOTAL
+// ================================================
+BEGSR SRTOTSR;
+
+  DSPLY '============================';
+  WMSG = 'GRAND TOTAL : ' + %CHAR(WGRDTOT);
+  DSPLY WMSG;
+  DSPLY '============================';
+
+ENDSR;
+
+// ================================================
+// SUBROUTINE 10 - SRENDSR
+// PURPOSE : END PROGRAM MESSAGE
+// ================================================
+BEGSR SRENDSR;
+
+  DSPLY '*** SALES ORDER PROCESSING END ***';
+
+ENDSR;
+
+
+You are a certified IBM i RPGLE expert with 20+ years of experience.
+
+I am going to provide an RPGLE program named as SRSDEMO that contains subroutines.
+Analyze it strictly as per IBM i ILE RPG standards.
+
+Return your answer in this exact structure:
+
+  1. PROGRAM OVERVIEW
+     - What does this program do overall?
+     - How many subroutines are present?
+     - List all subroutine names found
+
+  2. FOR EACH SUBROUTINE EXPLAIN:
+     - Subroutine name
+     - Where is it called from? (line number)
+     - What is its purpose in plain English?
+     - What fields does it read?
+     - What fields does it change?
+     - What does it return or produce?
+     - Does it call another subroutine?
+
+  3. SUBROUTINE CALL FLOW
+     - Show the order subroutines are called
+     - Show if any subroutine calls another
+     - Show which subroutine runs first to last
+
+  4. FIELDS USED BY EACH SUBROUTINE
+     - List every field each subroutine reads
+     - List every field each subroutine changes
+
+  5. SUBROUTINE DEPENDENCY MAP
+     - Which subroutines depend on each other?
+     - Must any subroutine run before another?
+
+  6. COMPLETE SUMMARY TABLE
+     SR NAME | PURPOSE | CALLED FROM | READS | CHANGES
+
+IMPORTANT:
+  - BEGSR marks start of subroutine
+  - ENDSR marks end of subroutine
+  - EXSR means this subroutine is being called
+  - Read code exactly — do not guess
+  - Do not miss any subroutine
+  - Use plain English only
