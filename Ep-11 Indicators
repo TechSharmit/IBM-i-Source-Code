@@ -1,0 +1,162 @@
+**FREE
+
+// ------------------------------------------------
+// PROGRAM  : INDRPT
+// PURPOSE  : INDICATOR ANALYSIS DEMO FOR BOB
+// ------------------------------------------------
+
+DCL-S WCUSNO   CHAR(5);
+DCL-S WCUSNAM  CHAR(20);
+DCL-S WCUSBAL  PACKED(9:2);
+DCL-S WDISAMT  PACKED(9:2);
+DCL-S WMSG     CHAR(52);
+DCL-S WIDX     INT(10);
+
+DCL-DS CUSDS QUALIFIED DIM(3);
+  CUSNO   CHAR(5);
+  CUSNAM  CHAR(20);
+  CUSBAL  PACKED(9:2);
+  CUSTYP  CHAR(1);
+END-DS;
+
+CUSDS(1).CUSNO  = '00001';
+CUSDS(1).CUSNAM = 'JOHN SMITH';
+CUSDS(1).CUSBAL = 1000.00;
+CUSDS(1).CUSTYP = 'G';
+
+CUSDS(2).CUSNO  = '00002';
+CUSDS(2).CUSNAM = 'JANE DOE';
+CUSDS(2).CUSBAL = 2000.00;
+CUSDS(2).CUSTYP = 'S';
+
+CUSDS(3).CUSNO  = '00003';
+CUSDS(3).CUSNAM = 'BOB MARTIN';
+CUSDS(3).CUSBAL = 500.00;
+CUSDS(3).CUSTYP = 'R';
+
+// INITIALIZE
+*IN50 = *OFF;
+*IN51 = *OFF;
+*IN60 = *OFF;
+*IN90 = *OFF;
+*IN91 = *OFF;
+*IN95 = *OFF;
+
+DSPLY '*** PROGRAM START ***';
+
+FOR WIDX = 1 TO 3;
+
+  WCUSNO  = CUSDS(WIDX).CUSNO;
+  WCUSNAM = CUSDS(WIDX).CUSNAM;
+  WCUSBAL = CUSDS(WIDX).CUSBAL;
+
+  // LAST RECORD CHECK
+  IF WIDX = 3;
+    *IN90 = *ON;
+  ENDIF;
+
+  // CUSTOMER TYPE
+  *IN50 = *OFF;
+  *IN51 = *OFF;
+  *IN60 = *OFF;
+
+  IF CUSDS(WIDX).CUSTYP = 'G';
+    *IN50 = *ON;
+  ELSEIF CUSDS(WIDX).CUSTYP = 'S';
+    *IN51 = *ON;
+  ELSE;
+    *IN60 = *ON;
+  ENDIF;
+
+  // DISCOUNT
+  *IN91 = *OFF;
+
+  IF *IN50 = *ON;
+    WDISAMT = WCUSBAL * 0.20;
+    *IN91   = *ON;
+  ELSEIF *IN51 = *ON;
+    WDISAMT = WCUSBAL * 0.15;
+    *IN91   = *ON;
+  ELSE;
+    WDISAMT = 0;
+  ENDIF;
+
+  // HIGH BALANCE CHECK - NOTE: *IN95 SET BUT NEVER TESTED
+  IF WCUSBAL > 1500;
+    *IN95 = *ON;
+  ENDIF;
+
+  // DISPLAY
+  IF *IN91 = *ON;
+    WMSG = %TRIMR(WCUSNAM) + ' DISC=' + %CHAR(WDISAMT);
+    DSPLY WMSG;
+  ELSE;
+    WMSG = %TRIMR(WCUSNAM) + ' NO DISCOUNT';
+    DSPLY WMSG;
+  ENDIF;
+
+  IF *IN90 = *ON;
+    DSPLY '*** LAST RECORD ***';
+  ENDIF;
+
+ENDFOR;
+
+DSPLY '*** PROGRAM END ***';
+
+*INLR = *ON;
+
+
+You are a certified IBM i ILE RPG expert with 20+ years
+of experience on IBM i (AS/400).
+
+I will give you a Full Free RPGLE program named as INDRPT.
+Analyze every indicator used in this program and
+prepare a complete Indicator Analysis Report.
+
+Return the report in this exact structure:
+
+SECTION 1 : INDICATOR INVENTORY
+  List every indicator found in the program:
+  - Indicator number or name
+  - Type of indicator (General/LR/Overflow etc)
+  - Line numbers where it appears
+
+SECTION 2 : INDICATOR USAGE TABLE
+  For every indicator show:
+  | INDICATOR | SET ON | SET OFF | TESTED | PURPOSE |
+
+SECTION 3 : INDICATOR FLOW ANALYSIS
+  For each indicator trace:
+  - Where it is initialized
+  - Where it is set ON and why
+  - Where it is set OFF and why
+  - Where it is tested and what happens
+
+SECTION 4 : INDICATOR RISK REPORT
+  Flag any of these problems:
+  - Indicator set ON but never tested
+  - Indicator tested but never set ON
+  - Indicator never reset to OFF (always ON risk)
+  - Same indicator used for multiple purposes
+  - Indicator used as both input and output flag
+
+SECTION 5 : NAMED INDICATOR RECOMMENDATION
+  For every indicator suggest:
+  - Meaningful name to replace it
+  - POS number for INDARA mapping
+  - Reason for the suggested name
+
+SECTION 6 : INDARA DECLARATION
+  Write the complete INDDS ready to use:
+  DCL-DS INDDS INDARA;
+    ...all indicators with POS...
+  END-DS;
+
+IMPORTANT RULES:
+  - Read every line of code exactly
+  - Do not miss any indicator
+  - *INxx = *ON  means SET ON
+  - *INxx = *OFF means SET OFF
+  - IF *INxx or DOW *INxx means TESTED
+  - Flag any indicator used for dual purpose
+  - Use IBM i RPG standards only
