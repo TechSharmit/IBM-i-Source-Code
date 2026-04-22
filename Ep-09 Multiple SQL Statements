@@ -1,0 +1,370 @@
+**FREE
+
+// ------------------------------------------------
+// PROGRAM  : SQLDEMO
+// PURPOSE  : DEMONSTRATE EMBEDDED SQL IN RPGLE
+//            SELECT, INSERT, UPDATE, DELETE,
+//            CURSOR, ERROR HANDLING
+// AUTHOR   : SHARMIT
+// ------------------------------------------------
+
+// ------------------------------------------------
+// STANDALONE HOST VARIABLES
+// ------------------------------------------------
+DCL-S HCUSNO    CHAR(5);
+DCL-S HCUSNAM   CHAR(20);
+DCL-S HCUSBAL   PACKED(9:2);
+DCL-S HCUSTYP   CHAR(1);
+DCL-S HORDNO    CHAR(8);
+DCL-S HORDAMT   PACKED(9:2);
+DCL-S HORDSTS   CHAR(1);
+DCL-S HNEWTOT   PACKED(9:2);
+DCL-S WMSG      CHAR(52);
+DCL-S WSQLSTATE CHAR(5);
+DCL-S WSQLCODE  INT(10);
+
+// ------------------------------------------------
+// MAIN PROCESSING
+// ------------------------------------------------
+DSPLY '=================================';
+DSPLY '   SQLRPGLE DEMO PROGRAM START  ';
+DSPLY '=================================';
+
+// ------------------------------------------------
+// SQL 1 - SELECT SINGLE ROW INTO HOST VARIABLES
+// FETCH ONE CUSTOMER BY KEY
+// ------------------------------------------------
+DSPLY ' ';
+DSPLY '--- SQL 1 : SELECT SINGLE ROW ---';
+
+HCUSNO = '00001';
+
+EXEC SQL
+  SELECT CUSNAM,
+         CUSBAL,
+         CUSTYP
+  INTO   :HCUSNAM,
+         :HCUSBAL,
+         :HCUSTYP
+  FROM   SHARMITTS1/CUSTMAST
+  WHERE  CUSNO = :HCUSNO;
+
+WSQLCODE = SQLCODE;
+
+IF WSQLCODE = 0;
+  WMSG = 'FOUND : ' + %TRIMR(HCUSNAM);
+  DSPLY WMSG;
+  WMSG = 'BAL   : ' + %CHAR(HCUSBAL);
+  DSPLY WMSG;
+ELSEIF WSQLCODE = 100;
+  DSPLY 'NO DATA FOUND FOR CUSNO 00001';
+ELSE;
+  WMSG = 'SQL ERROR : ' + %CHAR(WSQLCODE);
+  DSPLY WMSG;
+ENDIF;
+
+// ------------------------------------------------
+// SQL 2 - INSERT NEW ROW
+// ADD A NEW CUSTOMER RECORD
+// ------------------------------------------------
+DSPLY ' ';
+DSPLY '--- SQL 2 : INSERT NEW ROW ---';
+
+HCUSNO  = '00099';
+HCUSNAM = 'TEST CUSTOMER';
+HCUSBAL = 9999.00;
+HCUSTYP = 'G';
+
+EXEC SQL
+  INSERT INTO SHARMITTS1/CUSTMAST
+         (CUSNO,
+          CUSNAM,
+          CUSBAL,
+          CUSTYP)
+  VALUES (:HCUSNO,
+          :HCUSNAM,
+          :HCUSBAL,
+          :HCUSTYP);
+
+WSQLCODE = SQLCODE;
+
+IF WSQLCODE = 0;
+  DSPLY 'INSERT : NEW CUSTOMER ADDED';
+ELSE;
+  WMSG = 'INSERT ERROR : ' + %CHAR(WSQLCODE);
+  DSPLY WMSG;
+ENDIF;
+
+// ------------------------------------------------
+// SQL 3 - UPDATE EXISTING ROW
+// UPDATE CUSTOMER BALANCE
+// ------------------------------------------------
+DSPLY ' ';
+DSPLY '--- SQL 3 : UPDATE ROW ---';
+
+HCUSNO  = '00001';
+HNEWTOT = 1500.00;
+
+EXEC SQL
+  UPDATE SHARMITTS1/CUSTMAST
+  SET    CUSBAL = :HNEWTOT
+  WHERE  CUSNO  = :HCUSNO;
+
+WSQLCODE = SQLCODE;
+
+IF WSQLCODE = 0;
+  DSPLY 'UPDATE : CUSTOMER BALANCE UPDATED';
+ELSE;
+  WMSG = 'UPDATE ERROR : ' + %CHAR(WSQLCODE);
+  DSPLY WMSG;
+ENDIF;
+
+// ------------------------------------------------
+// SQL 4 - DELETE ROW
+// DELETE TEST CUSTOMER ADDED IN SQL 2
+// ------------------------------------------------
+DSPLY ' ';
+DSPLY '--- SQL 4 : DELETE ROW ---';
+
+HCUSNO = '00099';
+
+EXEC SQL
+  DELETE FROM SHARMITTS1/CUSTMAST
+  WHERE  CUSNO = :HCUSNO;
+
+WSQLCODE = SQLCODE;
+
+IF WSQLCODE = 0;
+  DSPLY 'DELETE : TEST CUSTOMER REMOVED';
+ELSE;
+  WMSG = 'DELETE ERROR : ' + %CHAR(WSQLCODE);
+  DSPLY WMSG;
+ENDIF;
+
+// ------------------------------------------------
+// SQL 5 - DECLARE AND OPEN CURSOR
+// READ ALL CUSTOMERS SEQUENTIALLY
+// ------------------------------------------------
+DSPLY ' ';
+DSPLY '--- SQL 5 : CURSOR READ ALL ---';
+
+EXEC SQL
+  DECLARE CUSTCSR CURSOR FOR
+  SELECT CUSNO,
+         CUSNAM,
+         CUSBAL
+  FROM   SHARMITTS1/CUSTMAST
+  ORDER  BY CUSNO
+  FOR READ ONLY;
+
+EXEC SQL
+  OPEN CUSTCSR;
+
+WSQLCODE = SQLCODE;
+
+IF WSQLCODE = 0;
+  DSPLY 'CURSOR OPENED SUCCESSFULLY';
+ELSE;
+  WMSG = 'CURSOR OPEN ERROR : ' + %CHAR(WSQLCODE);
+  DSPLY WMSG;
+ENDIF;
+
+// ------------------------------------------------
+// SQL 6 - FETCH ROWS FROM CURSOR
+// ------------------------------------------------
+DSPLY ' ';
+DSPLY '--- SQL 6 : FETCH FROM CURSOR ---';
+
+EXEC SQL FETCH CUSTCSR
+  INTO :HCUSNO,
+       :HCUSNAM,
+       :HCUSBAL;
+
+WSQLCODE = SQLCODE;
+
+DOW WSQLCODE = 0;
+
+  WMSG = 'FETCH : ' + HCUSNO
+                    + ' '
+                    + %TRIMR(HCUSNAM)
+                    + ' '
+                    + %CHAR(HCUSBAL);
+  DSPLY WMSG;
+
+  EXEC SQL FETCH CUSTCSR
+    INTO :HCUSNO,
+         :HCUSNAM,
+         :HCUSBAL;
+
+  WSQLCODE = SQLCODE;
+
+ENDDO;
+
+IF WSQLCODE = 100;
+  DSPLY 'CURSOR : ALL ROWS FETCHED';
+ENDIF;
+
+// ------------------------------------------------
+// SQL 7 - CLOSE CURSOR
+// ------------------------------------------------
+EXEC SQL CLOSE CUSTCSR;
+
+WSQLCODE = SQLCODE;
+
+IF WSQLCODE = 0;
+  DSPLY 'CURSOR CLOSED SUCCESSFULLY';
+ENDIF;
+
+// ------------------------------------------------
+// SQL 8 - SELECT WITH JOIN
+// GET CUSTOMER AND ORDER DETAILS TOGETHER
+// ------------------------------------------------
+DSPLY ' ';
+DSPLY '--- SQL 8 : CURSOR WITH JOIN ---';
+
+EXEC SQL
+  DECLARE JORDRSC CURSOR FOR
+  SELECT C.CUSNO,
+         C.CUSNAM,
+         O.ORDNO,
+         O.ORDAMT
+  FROM   SHARMITTS1/CUSTMAST C
+  JOIN   SHARMITTS1/ORDMAST  O
+  ON     C.CUSNO = O.CUSNO
+  WHERE  O.ORDSTS = 'O'
+  ORDER  BY C.CUSNO, O.ORDNO
+  FOR READ ONLY;
+
+EXEC SQL OPEN  JORDRSC;
+EXEC SQL FETCH JORDRSC
+  INTO :HCUSNO,
+       :HCUSNAM,
+       :HORDNO,
+       :HORDAMT;
+
+WSQLCODE = SQLCODE;
+
+DOW WSQLCODE = 0;
+
+  WMSG = 'JOIN : ' + HCUSNO
+                   + ' '
+                   + %TRIMR(HCUSNAM)
+                   + ' '
+                   + HORDNO;
+  DSPLY WMSG;
+
+  EXEC SQL FETCH JORDRSC
+    INTO :HCUSNO,
+         :HCUSNAM,
+         :HORDNO,
+         :HORDAMT;
+
+  WSQLCODE = SQLCODE;
+
+ENDDO;
+
+EXEC SQL CLOSE JORDRSC;
+
+// ------------------------------------------------
+// PROGRAM END
+// ------------------------------------------------
+DSPLY ' ';
+DSPLY '=================================';
+DSPLY '   SQLRPGLE DEMO PROGRAM END    ';
+DSPLY '=================================';
+
+*INLR = *ON;
+
+
+You are a certified IBM i SQLRPGLE expert with 20+ years
+of experience on IBM i (AS/400).
+You strictly follow IBM i DB2 for i SQL and ILE RPG standards.
+
+I will give you an SQLRPGLE program named as SQLDEMO that contains embedded SQL.
+Analyze every SQL statement strictly as per IBM i DB2 for i
+SQL rules and explain it clearly in plain English.
+
+====================================================
+STRICT ANALYSIS RULES — DO NOT VIOLATE
+====================================================
+
+RULE 1 - IDENTIFY EVERY SQL STATEMENT
+  Find every statement that starts with EXEC SQL
+  List them in the order they appear in the program
+  Valid SQL statements to look for:
+  - EXEC SQL SELECT
+  - EXEC SQL INSERT
+  - EXEC SQL UPDATE
+  - EXEC SQL DELETE
+  - EXEC SQL DECLARE CURSOR
+  - EXEC SQL OPEN
+  - EXEC SQL FETCH
+  - EXEC SQL CLOSE
+  - EXEC SQL SET
+  - EXEC SQL CALL
+  - EXEC SQL FOR
+  Never miss any EXEC SQL statement
+
+RULE 2 - FOR EVERY SQL STATEMENT EXPLAIN
+  - Statement type (SELECT/INSERT/UPDATE/DELETE/CURSOR)
+  - Which table or tables are involved
+  - What columns are read or changed
+  - What WHERE condition is applied
+  - What host variables are used
+    (Host variables start with : in SQL)
+  - What will this statement do in plain English
+  - What is stored in SQLSTATE or SQLCODE after
+
+RULE 3 - CURSOR ANALYSIS
+  For every DECLARE CURSOR explain:
+  - Cursor name
+  - What query it runs
+  - Is it FOR READ ONLY or FOR UPDATE
+  - What table it reads from
+  - What order records come in (ORDER BY)
+  For every OPEN explain what triggers it
+  For every FETCH explain what fields are populated
+  For every CLOSE explain when it is closed
+
+RULE 4 - HOST VARIABLES
+  List EVERY host variable used in SQL:
+  - Variable name (with : prefix)
+  - RPG field it maps to
+  - Data type and length
+  - Is it INPUT (passes value to SQL) or
+    OUTPUT (receives value from SQL)
+
+RULE 5 - ERROR HANDLING
+  Check for these error handling methods:
+  - SQLSTATE checking (SQLSTATE = '00000' = success)
+  - SQLCODE checking  (SQLCODE = 0 = success)
+  - SQLCODE = 100 means NO DATA FOUND
+  - SQLCODE < 0   means ERROR occurred
+  - ON-ERROR blocks
+  - IF SQLCODE checks
+  If none found state: NO ERROR HANDLING FOUND
+
+RULE 6 - SQL PERFORMANCE
+  For every SELECT or CURSOR comment on:
+  - Is WHERE clause present? (good for performance)
+  - Is ORDER BY present?
+  - Is index likely used?
+  - Any performance concern?
+
+RULE 7 - RETURN IN THIS EXACT STRUCTURE
+  SECTION 1 : PROGRAM OVERVIEW
+  SECTION 2 : ALL SQL STATEMENTS FOUND (LIST)
+  SECTION 3 : DETAILED ANALYSIS OF EACH SQL
+  SECTION 4 : CURSOR ANALYSIS (if any)
+  SECTION 5 : HOST VARIABLES TABLE
+  SECTION 6 : ERROR HANDLING ANALYSIS
+  SECTION 7 : SQL PERFORMANCE NOTES
+  SECTION 8 : PLAIN ENGLISH SUMMARY
+
+RULE 8 - WHAT TO NEVER DO
+  - Never invent SQL that is not in the program
+  - Never skip any EXEC SQL statement
+  - Never guess host variable types
+  - Never assume table structure
+  - Always read SQLSTATE and SQLCODE usage exactly
+  - Use IBM i DB2 for i SQL terminology only
