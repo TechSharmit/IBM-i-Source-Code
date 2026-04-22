@@ -1,0 +1,190 @@
+PROGRAM 1 → Source Member QRPGLESRC/MAINPGM (Type: RPGLE)
+
+**FREE
+
+// ================================================
+// PROGRAM  : MAINPGM
+// LEVEL    : 1 - TOP OF CALL STACK
+// PURPOSE  : MAIN DRIVER
+// CALLS    : CALCDIS
+// ================================================
+
+DCL-S WORDAMT  PACKED(9:2);
+DCL-S WDISAMT  PACKED(9:2);
+DCL-S WTAXAMT  PACKED(9:2);
+DCL-S WNETAMT  PACKED(9:2);
+DCL-S WCUSNO   CHAR(5);
+DCL-S WMSG     CHAR(52);
+
+// PROTOTYPE FOR CALCDIS
+DCL-PR CALCDIS;
+  PORDAMT   PACKED(9:2) VALUE;
+  PDISAMT   PACKED(9:2);
+  PTAXAMT   PACKED(9:2);
+  PNETAMT   PACKED(9:2);
+END-PR;
+
+// SET INPUT VALUES
+WCUSNO  = '00001';
+WORDAMT = 1000.00;
+WDISAMT = 0;
+WTAXAMT = 0;
+WNETAMT = 0;
+
+DSPLY '*** MAINPGM : START ***';
+WMSG = 'MAINPGM : CUSNO  = ' + WCUSNO;
+DSPLY WMSG;
+WMSG = 'MAINPGM : ORDAMT = ' + %CHAR(WORDAMT);
+DSPLY WMSG;
+DSPLY 'MAINPGM : CALLING CALCDIS --->';
+
+// ACTUAL PROGRAM CALL TO CALCDIS
+CALLP CALCDIS(WORDAMT :
+              WDISAMT :
+              WTAXAMT :
+              WNETAMT);
+
+WMSG = 'MAINPGM : DISAMT = ' + %CHAR(WDISAMT);
+DSPLY WMSG;
+WMSG = 'MAINPGM : TAXAMT = ' + %CHAR(WTAXAMT);
+DSPLY WMSG;
+WMSG = 'MAINPGM : NETAMT = ' + %CHAR(WNETAMT);
+DSPLY WMSG;
+DSPLY '*** MAINPGM : END ***';
+
+*INLR = *ON;
+
+PROGRAM 2 → Source Member QRPGLESRC/CALCDIS (Type: RPGLE)
+
+**FREE
+
+// ================================================
+// PROGRAM  : CALCDIS
+// LEVEL    : 2
+// PURPOSE  : CALCULATE DISCOUNT
+// CALLED BY: MAINPGM
+// CALLS    : CALCTAX
+// ================================================
+
+// PROCEDURE INTERFACE - PARAMETERS FROM MAINPGM
+DCL-PI CALCDIS;
+  PORDAMT   PACKED(9:2) VALUE;
+  PDISAMT   PACKED(9:2);
+  PTAXAMT   PACKED(9:2);
+  PNETAMT   PACKED(9:2);
+END-PI;
+
+// PROTOTYPE FOR CALCTAX
+DCL-PR CALCTAX;
+  PORDAMT   PACKED(9:2) VALUE;
+  PDISAMT   PACKED(9:2) VALUE;
+  PTAXAMT   PACKED(9:2);
+END-PR;
+
+// LOCAL FIELDS
+DCL-S WMSG  CHAR(52);
+
+DSPLY 'CALCDIS : RECEIVED ORDAMT=' + %CHAR(PORDAMT);
+
+// CALCULATE 10% DISCOUNT
+PDISAMT = PORDAMT * 0.10;
+WMSG = 'CALCDIS : DISAMT = ' + %CHAR(PDISAMT);
+DSPLY WMSG;
+
+DSPLY 'CALCDIS : CALLING CALCTAX --->';
+
+// ACTUAL PROGRAM CALL TO CALCTAX
+CALLP CALCTAX(PORDAMT :
+              PDISAMT :
+              PTAXAMT);
+
+WMSG = 'CALCDIS : TAXAMT = ' + %CHAR(PTAXAMT);
+DSPLY WMSG;
+
+// CALCULATE NET AMOUNT
+PNETAMT = PORDAMT - PDISAMT + PTAXAMT;
+WMSG = 'CALCDIS : NETAMT = ' + %CHAR(PNETAMT);
+DSPLY WMSG;
+
+DSPLY 'CALCDIS : RETURNING TO MAINPGM <---';
+
+*INLR = *ON;
+
+PROGRAM 3 → Source Member QRPGLESRC/CALCTAX (Type: RPGLE)
+
+**FREE
+
+// ================================================
+// PROGRAM  : CALCTAX
+// LEVEL    : 3 - BOTTOM OF CALL STACK
+// PURPOSE  : CALCULATE TAX
+// CALLED BY: CALCDIS
+// CALLS    : NOBODY - BOTTOM OF STACK
+// ================================================
+
+// PROCEDURE INTERFACE - PARAMETERS FROM CALCDIS
+DCL-PI CALCTAX;
+  PORDAMT   PACKED(9:2) VALUE;
+  PDISAMT   PACKED(9:2) VALUE;
+  PTAXAMT   PACKED(9:2);
+END-PI;
+
+// LOCAL FIELDS
+DCL-S WTAXBASE PACKED(9:2);
+DCL-S WMSG     CHAR(52);
+
+DSPLY 'CALCTAX : RECEIVED ORDAMT=' + %CHAR(PORDAMT);
+DSPLY 'CALCTAX : RECEIVED DISAMT=' + %CHAR(PDISAMT);
+
+// CALCULATE TAX BASE
+WTAXBASE = PORDAMT - PDISAMT;
+WMSG = 'CALCTAX : TAXBASE = ' + %CHAR(WTAXBASE);
+DSPLY WMSG;
+
+// CALCULATE 18% TAX
+PTAXAMT = WTAXBASE * 0.18;
+WMSG = 'CALCTAX : TAXAMT  = ' + %CHAR(PTAXAMT);
+DSPLY WMSG;
+
+DSPLY 'CALCTAX : RETURNING TO CALCDIS <---';
+
+*INLR = *ON;
+
+
+
+You are a certified IBM i RPG expert with 20+ years of experience.
+
+
+I am giving you a text file CallStack which contain source code for 3 separate RPGLE programs.
+Each program is clearly marked with its name.
+Treat each one as a completely separate IBM i program object.
+
+Analyze the complete call stack across all 3 programs and return:
+
+1. CALL STACK ORDER
+   Which program is at top, middle and bottom?
+   Show the complete call chain.
+
+2. FOR EACH PROGRAM
+   - Program name
+   - What it does
+   - What parameters it RECEIVES
+   - What parameters it SENDS to next program
+   - What values it RETURNS back
+
+3. DATA FLOW TRACE
+   Show how data flows from MAINPGM all the way
+   down to CALCTAX and back up with actual values.
+   Use this format:
+   FIELD | VALUE BEFORE CALL | VALUE AFTER CALL
+
+4. PARAMETER DIRECTION TABLE
+   For every parameter in every program show:
+   PROGRAM | PARAMETER | TYPE | IN or OUT
+
+5. CALL STACK DIAGRAM
+   Draw a simple diagram showing the call flow
+   top to bottom and return flow bottom to top.
+
+6. EXPECTED OUTPUT
+   Show the exact screen output when MAINPGM runs.
