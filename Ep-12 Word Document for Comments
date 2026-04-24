@@ -1,0 +1,133 @@
+**FREE
+
+DCL-S WCUSNO   CHAR(5);
+DCL-S WCUSNAM  CHAR(20);
+DCL-S WCUSBAL  PACKED(9:2);
+DCL-S WDISAMT  PACKED(9:2);
+DCL-S WTAXAMT  PACKED(9:2);
+DCL-S WNETAMT  PACKED(9:2);
+DCL-S WMSG     CHAR(52);
+DCL-S WIDX     INT(10);
+DCL-S WTOTDIS  PACKED(9:2);
+DCL-S WTOTTAX  PACKED(9:2);
+DCL-S WTOTNET  PACKED(9:2);
+
+DCL-DS CUSDS QUALIFIED DIM(3);
+  CUSNO   CHAR(5);
+  CUSNAM  CHAR(20);
+  CUSBAL  PACKED(9:2);
+  CUSTYP  CHAR(1);
+END-DS;
+
+CUSDS(1).CUSNO  = '00001';
+CUSDS(1).CUSNAM = 'JOHN SMITH';
+CUSDS(1).CUSBAL = 1000.00;
+CUSDS(1).CUSTYP = 'G';
+
+CUSDS(2).CUSNO  = '00002';
+CUSDS(2).CUSNAM = 'JANE DOE';
+CUSDS(2).CUSBAL = 2000.00;
+CUSDS(2).CUSTYP = 'S';
+
+CUSDS(3).CUSNO  = '00003';
+CUSDS(3).CUSNAM = 'BOB MARTIN';
+CUSDS(3).CUSBAL = 500.00;
+CUSDS(3).CUSTYP = 'R';
+
+WTOTDIS = 0;
+WTOTTAX = 0;
+WTOTNET = 0;
+
+FOR WIDX = 1 TO 3;
+
+  WCUSNO  = CUSDS(WIDX).CUSNO;
+  WCUSNAM = CUSDS(WIDX).CUSNAM;
+  WCUSBAL = CUSDS(WIDX).CUSBAL;
+
+  IF CUSDS(WIDX).CUSTYP = 'G';
+    WDISAMT = WCUSBAL * 0.20;
+  ELSEIF CUSDS(WIDX).CUSTYP = 'S';
+    WDISAMT = WCUSBAL * 0.15;
+  ELSE;
+    WDISAMT = WCUSBAL * 0.10;
+  ENDIF;
+
+  WTAXAMT = (WCUSBAL - WDISAMT) * 0.18;
+  WNETAMT = WCUSBAL - WDISAMT + WTAXAMT;
+
+  WTOTDIS = WTOTDIS + WDISAMT;
+  WTOTTAX = WTOTTAX + WTAXAMT;
+  WTOTNET = WTOTNET + WNETAMT;
+
+  WMSG = %TRIMR(WCUSNAM) + ' NET=' + %CHAR(WNETAMT);
+  DSPLY WMSG;
+
+ENDFOR;
+
+DSPLY '----------------------------';
+WMSG = 'TOT DIS=' + %CHAR(WTOTDIS);
+DSPLY WMSG;
+WMSG = 'TOT TAX=' + %CHAR(WTOTTAX);
+DSPLY WMSG;
+WMSG = 'TOT NET=' + %CHAR(WTOTNET);
+DSPLY WMSG;
+
+*INLR = *ON;
+
+
+You are a certified IBM i ILE RPG expert with 20+ years
+of experience on IBM i (AS/400).
+
+I will give you an undocumented Full Free RPGLE program named as NODOCS.
+Your job is to add inline comments to every line of code and then prepare the word document for the output.
+
+Follow these rules:
+
+RULE 1 - COMMENT EVERY LINE
+  Add a comment on every single line that has code.
+  Use // for comments in Full Free RPGLE.
+  Place comment at end of line where it fits.
+  Place comment on line above if line is too long.
+
+RULE 2 - COMMENT STYLE
+  Comments must be:
+  - In plain English
+  - Describe WHAT the line does and WHY
+  - Not just repeat the code in words
+  Example BAD  : // Set WIDX to 1
+  Example GOOD : // Loop counter starts at first customer
+
+RULE 3 - SECTION HEADERS
+  Add a section header comment block before:
+  - Every DCL-DS block
+  - Every major processing block
+  - Every IF ELSEIF ELSE block
+  - Every loop
+  - Every calculation
+  Format:
+  // -----------------------------------------------
+  // SECTION : description
+  // -----------------------------------------------
+
+RULE 4 - PROGRAM HEADER
+  Add a full program header at the top:
+  // ===============================================
+  // PROGRAM  : name
+  // PURPOSE  : what it does
+  // AUTHOR   : unknown
+  // DATE     : unknown
+  // LOGIC    : brief description of main logic
+  // ===============================================
+
+RULE 5 - OUTPUT FORMAT
+  Return the commented program in this structure:
+  SECTION 1 : PROGRAM SUMMARY (what program does)
+  SECTION 2 : FULL COMMENTED PROGRAM
+
+And this output should be in word document file.
+
+IMPORTANT:
+  - Never change any code — only add comments
+  - Never remove any line
+  - Every executable line must have a comment
+  - Use IBM i RPG terminology in comments
