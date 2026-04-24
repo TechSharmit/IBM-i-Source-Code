@@ -1,0 +1,181 @@
+/*---------------------------------------------------*/
+/* PROGRAM  : DEPLOYDMO                              */
+/* PURPOSE  : MONTH END SALES PROCESSING JOB        */
+/* AUTHOR   : SHARMIT                               */
+/* DATE     : 2026                                  */
+/*---------------------------------------------------*/
+PGM
+
+/* DECLARE VARIABLES */
+DCL VAR(&RUNDATE)  TYPE(*CHAR) LEN(8)
+DCL VAR(&RUNLIB)   TYPE(*CHAR) LEN(10)
+DCL VAR(&STATUS)   TYPE(*CHAR) LEN(1)
+DCL VAR(&ERRMSG)   TYPE(*CHAR) LEN(50)
+DCL VAR(&JOBNAME)  TYPE(*CHAR) LEN(10)
+DCL VAR(&RTNCODE)  TYPE(*DEC)  LEN(5 0)
+
+/* INITIALIZE */
+CHGVAR VAR(&RUNLIB)  VALUE('SHARMITTS1')
+CHGVAR VAR(&STATUS)  VALUE('N')
+CHGVAR VAR(&RTNCODE) VALUE(0)
+
+/* GET CURRENT DATE */
+RTVSYSVAL SYSVAL(QDATE) RTNVAR(&RUNDATE)
+
+/* SEND START MESSAGE */
+SNDPGMMSG MSG('DEPLOYDMO : MONTH END PROCESSING STARTED ' +
+              *CAT &RUNDATE) +
+          MSGTYPE(*INFO)
+
+/* CHECK DATA AREA EXISTS */
+CHKOBJ OBJ(SHARMITTS1/MONTHCTL) OBJTYPE(*DTAARA)
+MONMSG MSGID(CPF9801) EXEC(DO)
+  CHGVAR VAR(&ERRMSG) VALUE('DATA AREA MONTHCTL NOT FOUND')
+  SNDPGMMSG MSG(&ERRMSG) MSGTYPE(*ESCAPE)
+  GOTO CMDLBL(ENDJOB)
+ENDDO
+
+/* RETRIEVE DATA AREA VALUE */
+RTVDTAARA DTAARA(SHARMITTS1/MONTHCTL) RTNVAR(&STATUS)
+
+/* CHECK IF ALREADY RUN */
+IF COND(&STATUS = 'Y') THEN(DO)
+  SNDPGMMSG MSG('DEPLOYDMO : ALREADY RUN FOR THIS MONTH') +
+            MSGTYPE(*INFO)
+  GOTO CMDLBL(ENDJOB)
+ENDDO
+
+/* STEP 1 - RUN SALES VALIDATION */
+SNDPGMMSG MSG('DEPLOYDMO : CALLING SALESVLD') +
+          MSGTYPE(*INFO)
+
+CALL PGM(SHARMITTS1/SALESVLD) PARM(&RUNDATE &RTNCODE)
+MONMSG MSGID(CPF0000) EXEC(DO)
+  CHGVAR VAR(&ERRMSG) VALUE('SALESVLD FAILED')
+  SNDPGMMSG MSG(&ERRMSG) MSGTYPE(*ESCAPE)
+  GOTO CMDLBL(ENDJOB)
+ENDDO
+
+/* CHECK RETURN CODE FROM SALESVLD */
+IF COND(&RTNCODE *NE 0) THEN(DO)
+  SNDPGMMSG MSG('DEPLOYDMO : SALESVLD ERROR CODE ' *CAT +
+               &RTNCODE) MSGTYPE(*ESCAPE)
+  GOTO CMDLBL(ENDJOB)
+ENDDO
+
+/* STEP 2 - SUBMIT SALES REPORT TO BATCH */
+SNDPGMMSG MSG('DEPLOYDMO : SUBMITTING SALESRPT TO BATCH') +
+          MSGTYPE(*INFO)
+
+SBMJOB CMD(CALL PGM(SHARMITTS1/SALESRPT) +
+           PARM(&RUNDATE)) +
+       JOB(SALESRPT) +
+       JOBD(SHARMITTS1/SALESJOBD) +
+       JOBQ(SHARMITTS1/SALESJOBQ) +
+       OUTQ(SHARMITTS1/SALESOUTQ)
+
+MONMSG MSGID(CPF0000) EXEC(DO)
+  CHGVAR VAR(&ERRMSG) VALUE('SBMJOB SALESRPT FAILED')
+  SNDPGMMSG MSG(&ERRMSG) MSGTYPE(*ESCAPE)
+  GOTO CMDLBL(ENDJOB)
+ENDDO
+
+/* STEP 3 - CALL MONTH END UPDATE */
+SNDPGMMSG MSG('DEPLOYDMO : CALLING MTHENDUPD') +
+          MSGTYPE(*INFO)
+
+CALL PGM(SHARMITTS1/MTHENDUPD) PARM(&RUNDATE &STATUS)
+MONMSG MSGID(CPF0000) EXEC(DO)
+  CHGVAR VAR(&ERRMSG) VALUE('MTHENDUPD FAILED')
+  SNDPGMMSG MSG(&ERRMSG) MSGTYPE(*ESCAPE)
+  GOTO CMDLBL(ENDJOB)
+ENDDO
+
+/* UPDATE DATA AREA - MARK AS RUN */
+CHGDTAARA DTAARA(SHARMITTS1/MONTHCTL) VALUE('Y')
+
+/* SEND SUCCESS MESSAGE */
+SNDPGMMSG MSG('DEPLOYDMO : MONTH END COMPLETED SUCCESSFULLY') +
+          MSGTYPE(*INFO)
+
+ENDJOB:
+SNDPGMMSG MSG('DEPLOYDMO : JOB ENDED STATUS=' *CAT &STATUS) +
+          MSGTYPE(*INFO)
+
+ENDPGM
+
+You are a certified IBM i CLLE expert with 20+ years of experience
+on IBM i (AS/400).
+
+I will give you a CLLE program named as DEPLOYMOD. Analyze it and produce a complete
+Deployment Checklist Document for deploying this program to 
+production on IBM i.
+
+Return the checklist in this exact structure:
+
+SECTION 1 : PROGRAM DETAILS
+  - Program name, type, purpose
+  - Source file and member name
+  - Library details
+  - Compile command required
+
+SECTION 2 : PRE-DEPLOYMENT CHECKLIST
+  List every item that must be checked BEFORE deploying:
+  - Source code review complete?
+  - Program compiled without errors?
+  - All called programs exist in target library?
+  - All data areas exist?
+  - All files and queues exist?
+  - Authority and user profile checks
+  - Backup of existing program taken?
+  - Test environment validated?
+
+SECTION 3 : COMPILE CHECKLIST
+  - Exact compile command with all parameters
+  - Which library to compile into?
+  - Which source file to compile from?
+  - Any special compile options needed?
+  - What to check after compile?
+
+SECTION 4 : OBJECT DEPENDENCY CHECKLIST
+  List every object this program depends on:
+  - Programs it calls (CALL commands)
+  - Data areas it uses (CHGDTAARA/RTVDTAARA)
+  - Message files it uses (SNDPGMMSG)
+  - Job queues it submits to (SBMJOB)
+  - Files it reads or writes
+  For each object state:
+  - Object name, type, library
+  - Must exist before deployment? YES/NO
+
+SECTION 5 : DEPLOYMENT STEPS
+  List exact step by step deployment actions:
+  STEP 1 : Take backup
+  STEP 2 : Compile in test library first
+  STEP 3 : Test in test environment
+  STEP 4 : Move to production library
+  STEP 5 : Verify object exists
+  STEP 6 : Run smoke test
+  Use exact IBM i commands for each step.
+
+SECTION 6 : POST DEPLOYMENT CHECKLIST
+  - Program object created successfully?
+  - Program runs without errors?
+  - All messages sent correctly?
+  - Job log checked for warnings?
+  - Output verified?
+  - Stakeholder sign off obtained?
+
+SECTION 7 : ROLLBACK PLAN
+  - How to restore previous version?
+  - Exact rollback commands on IBM i
+  - Who to contact if deployment fails?
+
+IMPORTANT RULES:
+  - Read the code exactly as written
+  - List every CALL, SBMJOB, SNDPGMMSG found
+  - Use exact IBM i CL command syntax
+  - Do not invent objects not in the code
+  - Every checklist item needs YES/NO/NA column
+  - Output must be ready to use as a Word document
+
