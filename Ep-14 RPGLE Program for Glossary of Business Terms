@@ -1,0 +1,313 @@
+**FREE
+
+// ------------------------------------------------
+// PROGRAM  : GLOSSDMO
+// PURPOSE  : SALES ORDER PROCESSING DEMO
+//            FOR GLOSSARY GENERATION
+// ------------------------------------------------
+
+CTL-OPT DFTACTGRP(*NO) ACTGRP(*CALLER);
+
+// ------------------------------------------------
+// STANDALONE WORK FIELDS
+// ------------------------------------------------
+DCL-S WCUSNO    CHAR(5);
+DCL-S WCUSNAM   CHAR(20);
+DCL-S WCUSBAL   PACKED(9:2);
+DCL-S WCUSTYP   CHAR(1);
+DCL-S WORDNO    CHAR(8);
+DCL-S WORDAMT   PACKED(9:2);
+DCL-S WORDQTY   PACKED(5:0);
+DCL-S WORDSTS   CHAR(1);
+DCL-S WORDDAT   CHAR(8);
+DCL-S WINVNO    CHAR(8);
+DCL-S WINVPRC   PACKED(9:2);
+DCL-S WINVSTS   CHAR(1);
+DCL-S WSALAMT   PACKED(9:2);
+DCL-S WSALDAT   CHAR(8);
+DCL-S WDISAMT   PACKED(9:2);
+DCL-S WDISPCT   PACKED(5:2);
+DCL-S WTAXAMT   PACKED(9:2);
+DCL-S WTAXPCT   PACKED(5:2);
+DCL-S WNETAMT   PACKED(9:2);
+DCL-S WGRSAMT   PACKED(9:2);
+DCL-S WTOTDIS   PACKED(9:2);
+DCL-S WTOTTAX   PACKED(9:2);
+DCL-S WTOTNET   PACKED(9:2);
+DCL-S WTOTORD   PACKED(5:0);
+DCL-S WRUNDAT   CHAR(8);
+DCL-S WRUNLIB   CHAR(10);
+DCL-S WMSG      CHAR(52);
+DCL-S WERRMSG   CHAR(100);
+DCL-S WRTNCD    PACKED(5:0);
+DCL-S WIDX      INT(10);
+DCL-S WCNT      PACKED(5:0);
+DCL-S WSTS      CHAR(1);
+DCL-S WX        INT(10);
+
+// ------------------------------------------------
+// CUSTOMER MASTER DATA STRUCTURE
+// ------------------------------------------------
+DCL-DS CUSDS QUALIFIED DIM(3);
+  CUSNO    CHAR(5);
+  CUSNAM   CHAR(20);
+  CUSBAL   PACKED(9:2);
+  CUSTYP   CHAR(1);
+  CUSCD    CHAR(3);
+  CUSDESC  CHAR(30);
+END-DS;
+
+// ------------------------------------------------
+// ORDER MASTER DATA STRUCTURE
+// ------------------------------------------------
+DCL-DS ORDDS QUALIFIED DIM(3);
+  ORDNO    CHAR(8);
+  CUSNO    CHAR(5);
+  ORDQTY   PACKED(5:0);
+  ORDPRC   PACKED(9:2);
+  ORDAMT   PACKED(9:2);
+  ORDSTS   CHAR(1);
+  ORDDAT   CHAR(8);
+END-DS;
+
+// ------------------------------------------------
+// INVOICE DATA STRUCTURE
+// ------------------------------------------------
+DCL-DS INVDS QUALIFIED DIM(3);
+  INVNO    CHAR(8);
+  ORDNO    CHAR(8);
+  INVAMT   PACKED(9:2);
+  INVSTS   CHAR(1);
+  INVDAT   CHAR(8);
+  INVPRC   PACKED(9:2);
+END-DS;
+
+// ------------------------------------------------
+// LOAD CUSTOMER DATA
+// ------------------------------------------------
+CUSDS(1).CUSNO   = '00001';
+CUSDS(1).CUSNAM  = 'JOHN SMITH';
+CUSDS(1).CUSBAL  = 1000.00;
+CUSDS(1).CUSTYP  = 'G';
+CUSDS(1).CUSCD   = 'VIP';
+CUSDS(1).CUSDESC = 'VIP GOLD CUSTOMER';
+
+CUSDS(2).CUSNO   = '00002';
+CUSDS(2).CUSNAM  = 'JANE DOE';
+CUSDS(2).CUSBAL  = 2000.00;
+CUSDS(2).CUSTYP  = 'S';
+CUSDS(2).CUSCD   = 'REG';
+CUSDS(2).CUSDESC = 'REGULAR SILVER CUSTOMER';
+
+CUSDS(3).CUSNO   = '00003';
+CUSDS(3).CUSNAM  = 'BOB MARTIN';
+CUSDS(3).CUSBAL  = 500.00;
+CUSDS(3).CUSTYP  = 'R';
+CUSDS(3).CUSCD   = 'NEW';
+CUSDS(3).CUSDESC = 'NEW REGULAR CUSTOMER';
+
+// ------------------------------------------------
+// LOAD ORDER DATA
+// ------------------------------------------------
+ORDDS(1).ORDNO  = 'ORD00001';
+ORDDS(1).CUSNO  = '00001';
+ORDDS(1).ORDQTY = 2;
+ORDDS(1).ORDPRC = 500.00;
+ORDDS(1).ORDAMT = 0;
+ORDDS(1).ORDSTS = 'O';
+ORDDS(1).ORDDAT = '20260101';
+
+ORDDS(2).ORDNO  = 'ORD00002';
+ORDDS(2).CUSNO  = '00002';
+ORDDS(2).ORDQTY = 3;
+ORDDS(2).ORDPRC = 300.00;
+ORDDS(2).ORDAMT = 0;
+ORDDS(2).ORDSTS = 'O';
+ORDDS(2).ORDDAT = '20260102';
+
+ORDDS(3).ORDNO  = 'ORD00003';
+ORDDS(3).CUSNO  = '00003';
+ORDDS(3).ORDQTY = 1;
+ORDDS(3).ORDPRC = 900.00;
+ORDDS(3).ORDAMT = 0;
+ORDDS(3).ORDSTS = 'O';
+ORDDS(3).ORDDAT = '20260103';
+
+// ------------------------------------------------
+// INITIALIZE TOTALS
+// ------------------------------------------------
+WTOTDIS = 0;
+WTOTTAX = 0;
+WTOTNET = 0;
+WTOTORD = 0;
+WRTNCD  = 0;
+WSTS    = 'N';
+
+DSPLY '*** GLOSSDMO START ***';
+
+// ------------------------------------------------
+// PROCESS EACH ORDER
+// ------------------------------------------------
+FOR WIDX = 1 TO 3;
+
+  WORDNO  = ORDDS(WIDX).ORDNO;
+  WCUSNO  = ORDDS(WIDX).CUSNO;
+  WORDQTY = ORDDS(WIDX).ORDQTY;
+  WINVPRC = ORDDS(WIDX).ORDPRC;
+  WORDDAT = ORDDS(WIDX).ORDDAT;
+
+  // FIND CUSTOMER
+  FOR WX = 1 TO 3;
+    IF CUSDS(WX).CUSNO = WCUSNO;
+      WCUSNAM = CUSDS(WX).CUSNAM;
+      WCUSBAL = CUSDS(WX).CUSBAL;
+      WCUSTYP = CUSDS(WX).CUSTYP;
+      LEAVE;
+    ENDIF;
+  ENDFOR;
+
+  // CALCULATE GROSS
+  WGRSAMT = WORDQTY * WINVPRC;
+
+  // CALCULATE DISCOUNT
+  IF WCUSTYP = 'G';
+    WDISPCT = 0.20;
+  ELSEIF WCUSTYP = 'S';
+    WDISPCT = 0.15;
+  ELSE;
+    WDISPCT = 0.10;
+  ENDIF;
+
+  WDISAMT = WGRSAMT * WDISPCT;
+
+  // CALCULATE TAX
+  WTAXPCT = 0.18;
+  WTAXAMT = (WGRSAMT - WDISAMT) * WTAXPCT;
+
+  // CALCULATE NET
+  WNETAMT = WGRSAMT - WDISAMT + WTAXAMT;
+
+  // ACCUMULATE TOTALS
+  WTOTDIS = WTOTDIS + WDISAMT;
+  WTOTTAX = WTOTTAX + WTAXAMT;
+  WTOTNET = WTOTNET + WNETAMT;
+  WTOTORD = WTOTORD + 1;
+
+  WMSG = %TRIMR(WCUSNAM) + ' NET=' + %CHAR(WNETAMT);
+  DSPLY WMSG;
+
+ENDFOR;
+
+// DISPLAY TOTALS
+DSPLY '----------------------------';
+WMSG = 'TOTAL ORDERS  = ' + %CHAR(WTOTORD);
+DSPLY WMSG;
+WMSG = 'TOTAL DISCOUNT= ' + %CHAR(WTOTDIS);
+DSPLY WMSG;
+WMSG = 'TOTAL TAX     = ' + %CHAR(WTOTTAX);
+DSPLY WMSG;
+WMSG = 'TOTAL NET     = ' + %CHAR(WTOTNET);
+DSPLY WMSG;
+
+WSTS   = 'Y';
+WRTNCD = 0;
+
+DSPLY '*** GLOSSDMO END ***';
+
+You are a certified IBM i RPG expert and Business Analyst
+with 20+ years of experience on IBM i (AS/400).
+
+I will give you a Full Free RPGLE program named as GLOSSDMO.
+Analyze every field name and variable name and create
+a complete Glossary of Business Terms.
+
+Follow these rules:
+
+RULE 1 - FIND ALL NAMES
+  Find every name declared in the program:
+  - DCL-S  = standalone field
+  - DCL-DS = data structure and all subfields
+  - DCL-PI = procedure interface parameters
+  - DCL-PR = prototype parameters
+  Loop variables, work fields, indicators
+
+RULE 2 - DECODE THE NAME
+  IBM i field names use prefixes and abbreviations.
+  Decode every name like this:
+  Prefix W  = Work field        e.g. WCUSNO = Work Customer Number
+  Prefix H  = Host variable     e.g. HORDAMT = Host Order Amount
+  Prefix P  = Parameter         e.g. PCUSNO = Parameter Customer Number
+  Prefix I  = Input field       e.g. ICUSNAM = Input Customer Name
+  Prefix O  = Output field      e.g. OCUSBAL = Output Customer Balance
+  Common abbreviations:
+  CUS  = Customer
+  ORD  = Order
+  INV  = Invoice or Inventory
+  SAL  = Sales or Salary
+  BAL  = Balance
+  AMT  = Amount
+  QTY  = Quantity
+  PRC  = Price
+  DIS  = Discount
+  TAX  = Tax
+  NET  = Net Amount
+  GRS  = Gross Amount
+  TOT  = Total
+  DAT  = Date
+  TIM  = Time
+  STS  = Status
+  TYP  = Type
+  NAM  = Name
+  NO   = Number
+  CD   = Code
+  DESC = Description
+  CTL  = Control
+  PGM  = Program
+  LIB  = Library
+  MSG  = Message
+  ERR  = Error
+  RTN  = Return
+  IDX  = Index
+
+RULE 3 - BUSINESS TERM DEFINITION
+  For every field provide:
+  - Field name exactly as in code
+  - Decoded full name
+  - Business definition in plain English
+  - Data type and length
+  - Where it is used in the program
+
+RULE 4 - GROUP BY BUSINESS DOMAIN
+  Group all terms into business domains:
+  - CUSTOMER fields
+  - ORDER fields
+  - FINANCIAL fields (amounts tax discount)
+  - CONTROL fields (status flags counters)
+  - WORK fields (temporary calculation fields)
+  - SYSTEM fields (date time library job)
+
+RULE 5 - FLAG AMBIGUOUS NAMES
+  Flag any field name that is:
+  - Too short to understand (less than 4 chars)
+  - Uses unknown abbreviation
+  - Could mean more than one thing
+  - Has no clear business meaning
+  Suggest a better name for each flagged field
+
+RULE 6 - RETURN IN THIS EXACT STRUCTURE
+  SECTION 1 : COMPLETE FIELD INVENTORY
+  SECTION 2 : GLOSSARY BY BUSINESS DOMAIN
+  SECTION 3 : AMBIGUOUS NAMES REPORT
+  SECTION 4 : NAMING CONVENTION SUMMARY
+  SECTION 5 : RECOMMENDED IMPROVEMENTS
+
+IMPORTANT:
+  - Read every DCL-S DCL-DS DCL-PI exactly
+  - Do not invent fields not in the code
+  - Use plain business English in definitions
+  - Output must be suitable for a Word document
+  - Both technical and business users should
+    understand the glossary
+
+*INLR = *ON;
+
