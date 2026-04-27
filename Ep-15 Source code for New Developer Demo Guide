@@ -1,0 +1,116 @@
+**FREE
+
+// ------------------------------------------------
+// PROGRAM  : NEWDEVDMO
+// PURPOSE  : CUSTOMER DISCOUNT CALCULATOR
+// ------------------------------------------------
+
+CTL-OPT DFTACTGRP(*NO) ACTGRP(*CALLER);
+
+// CUSTOMER FIELDS
+DCL-S WCUSNO    CHAR(5);
+DCL-S WCUSNAM   CHAR(20);
+DCL-S WCUSBAL   PACKED(9:2);
+DCL-S WCUSTYP   CHAR(1);
+
+// CALCULATION FIELDS
+DCL-S WDISAMT   PACKED(9:2);
+DCL-S WDISPCT   PACKED(5:2);
+DCL-S WTAXAMT   PACKED(9:2);
+DCL-S WNETAMT   PACKED(9:2);
+
+// WORK FIELDS
+DCL-S WMSG      CHAR(52);
+DCL-S WIDX      INT(10);
+
+// CUSTOMER DATA
+DCL-DS CUSDS QUALIFIED DIM(3);
+  CUSNO   CHAR(5);
+  CUSNAM  CHAR(20);
+  CUSBAL  PACKED(9:2);
+  CUSTYP  CHAR(1);
+END-DS;
+
+// LOAD TEST DATA
+CUSDS(1).CUSNO  = '00001';
+CUSDS(1).CUSNAM = 'JOHN SMITH';
+CUSDS(1).CUSBAL = 1000.00;
+CUSDS(1).CUSTYP = 'G';
+
+CUSDS(2).CUSNO  = '00002';
+CUSDS(2).CUSNAM = 'JANE DOE';
+CUSDS(2).CUSBAL = 2000.00;
+CUSDS(2).CUSTYP = 'S';
+
+CUSDS(3).CUSNO  = '00003';
+CUSDS(3).CUSNAM = 'BOB MARTIN';
+CUSDS(3).CUSBAL = 500.00;
+CUSDS(3).CUSTYP = 'R';
+
+DSPLY '*** NEWDEVDMO START ***';
+
+// PROCESS EACH CUSTOMER
+FOR WIDX = 1 TO 3;
+
+  WCUSNO  = CUSDS(WIDX).CUSNO;
+  WCUSNAM = CUSDS(WIDX).CUSNAM;
+  WCUSBAL = CUSDS(WIDX).CUSBAL;
+  WCUSTYP = CUSDS(WIDX).CUSTYP;
+
+  // DETERMINE DISCOUNT PERCENTAGE
+  IF WCUSTYP = 'G';
+    WDISPCT = 0.20;
+  ELSEIF WCUSTYP = 'S';
+    WDISPCT = 0.15;
+  ELSE;
+    WDISPCT = 0.10;
+  ENDIF;
+
+  // CALCULA
+
+You are a certified IBM i RPG expert and Technical Writer
+with 20+ years of experience on IBM i (AS/400).
+
+I will give you an IBM i RPGLE program named as NewDevDmo.
+Analyze it and produce a New Developer Guide that helps
+a brand new developer understand the program quickly.
+
+Return in this exact structure:
+
+SECTION 1 : WHAT IS THIS PROGRAM?
+  - Program name and purpose in plain English
+  - What business problem does it solve?
+  - What inputs does it need?
+  - What outputs does it produce?
+
+SECTION 2 : WHERE TO START?
+  - Which line runs first?
+  - What is the main flow top to bottom?
+  - What are the key sections to read first?
+
+SECTION 3 : KEY FIELDS AND WHAT THEY DO
+  - List important fields only (not every field)
+  - Plain English name and purpose
+  - Which fields are inputs and which are outputs?
+
+SECTION 4 : BUSINESS LOGIC EXPLAINED
+  - What calculations does it do?
+  - What decisions does it make?
+  - Any special rules or conditions?
+
+SECTION 5 : HOW TO TEST IT?
+  - What data do you need to run it?
+  - How to compile and run?
+  - What output should you expect?
+
+SECTION 6 : COMMON QUESTIONS A NEW DEVELOPER ASKS
+  - Why is this field named like that?
+  - Why does this calculation work this way?
+  - What happens if input is wrong?
+
+IMPORTANT:
+  - Use plain English only
+  - No jargon — explain IBM i terms in brackets
+  - Keep it short — new developer guide not a manual
+  - Focus on UNDERSTANDING not every detail
+  - Output must be a professional Word document
